@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Bashbars - A portable and easily customisable way to add basic resource information to your MOTD
+# A BASH scripting learning exercise by IonicOwl
+
 # Define colour variables:
 DGRAY='\033[90m'
 REDBLINK='\033[5;31m'
