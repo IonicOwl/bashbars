@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# Define colour variables:
+DGRAY='\033[90m'
+REDBLINK='\033[5;31m'
+RED='\033[31m'
+CYAN='\033[36m'
+RESET='\033[0m'
+
+style=80 # Set the width. Styles are defined below.
+seg="=" # Set the character used for bar progress segments.
+empty="=" # Set the character used for remaining segments (use a SPACE to show nothing).
+segcol=$CYAN # Set the colour for the bar progress segments.
+emptycol=$DGRAY # set the colour for the remaining segments.
+threshcol=$REDBLINK # Set the colour for highlighted segments when over threshold.
+
+# Define styles here. Style names are arbitrary, but the width of each line is determined by the values
+# entered in the col1/2/3 variables, in number of characters.
+# E.g:
+# |----col1----|-----------------------col2-----------------------|----col3-----|
+#        /home [==================================================]    10% / 10GB
+
+if [[ $style == 60 ]]; then col1=13; col2=30; col3=14; fi
+if [[ $style == 80 ]]; then col1=13; col2=50; col3=14; fi
+if [[ $style == 100 ]]; then col1=18; col2=60; col3=19; fi
+if [[ $style == custom ]]; then col1=20; col2=100; col3=20; fi
+
+# Declare bars function:
+bars () {
+# Setup justification values for lables:
+        labelcharsrightpercent=${#3}
+        labelcharsrightof=4
+        labelcharsrightmaxval=${#4}
+        labelcharsrighttotal=$(echo $labelcharsrightpercent+$labelcharsrightof+$labelcharsrightmaxval | bc)
+        labelcharsleft=${#1}
+        labelspacingright=$(echo $col3-$labelcharsrighttotal | bc)
+        labelspacingleft=$(echo $col1-$labelcharsleft | bc)
+# Print the spaces before the label for right justification:
+        if [[ $labelspacingleft -gt 0 ]]; then printf '%0.s ' $(seq 1 $labelspacingleft); fi
+        printf $1
+        printf ' ['
+        remaining=$(echo $col2-$2 | bc)
+# Colour the bar segments the colour defined by $threshcol if the value is over threshold:
+        if [[ $5 == 1 ]]; then printf $threshcol; else printf $segcol; fi
+# Print the bars:
+        if [[ $2 -ge 1 ]]; then printf "%0.s$seg" $(seq 1 $2); printf $RESET; fi
+        if [[ $5 == 1 ]]; then printf $RESET; fi
+        if [[ $remaining -ge 1 ]]; then printf "%0.s${emptycol}$empty" $(seq 1 $remaining); fi
+        printf "${RESET}]"
+        if [[ $labelspacingright -gt 0 ]]; then printf '%0.s ' $(seq 1 $labelspacingright); fi
+        printf $3
+        printf "\045 / "
+        printf "$4\n"
+}
+
+membar () {
+        if [[ $1 == memory ]]
+        then
+                label="Memory"
+                maxval=$(free -h | awk 'NR==2{printf $2}')
+                percent=$(free -m | awk 'NR==2{printf "%.0f", $3*100/$2 }')
+                        if [[ $percent -gt $2 ]]; then thresh=1; else thresh=0; fi
+        fi
+        if [[ $1 == swap ]]
+        then
+                label="Swap"
+                maxval=$(free -h | awk 'NR==3{printf $2}')
+                percent=$(free -m | awk 'NR==3{printf "%.0f", $3*100/$2 }')
+                        if [[ $percent -gt $2 ]]; then thresh=1; else thresh=0; fi
+        fi
+        barcount=$(echo $percent*$col2/100 | bc)
+        bars $label $barcount $percent $maxval $thresh
+}
+
+volbar () {
+        label=$1
+        maxval=$(df -h $1 | awk 'NR==2{printf $2}')
+        spaceused=$(df $1 | awk 'NR==2{printf "%.0f", $5}')
+        if [[ $spaceused -gt $2 ]]; then thresh=1; else thresh=0; fi
+        barcount=$(echo $spaceused*$col2/100 | bc)
+        bars $label $barcount $spaceused $maxval $thresh
+}
+
+# Declare spacer function (allows a line space to be placed for grouping devices etc).
+spacer () {
+        printf "\n"
+}
+
+# List devices (function, device, threshold%)
+spacer
+membar memory 90
+membar swap 90
+spacer
+volbar / 90
+volbar /home 90
+volbar /srv 90
+volbar /var 90
+volbar /usr 90
+spacer
