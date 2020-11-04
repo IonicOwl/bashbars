@@ -1,7 +1,11 @@
 #!/bin/bash
 
 # Bashbars - A portable and easily customisable way to add basic resource information to your MOTD
-# A BASH scripting learning exercise by IonicOwl
+# A Joint BASH Adventure by IonicOwl & ViscountStyx
+# https://github.com/IonicOwl/bashbars
+# https://github.com/viscountstyx
+
+
 
 # Define colour variables:
 DGRAY='\033[90m'
